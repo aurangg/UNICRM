@@ -86,6 +86,10 @@ app.use(cors()); // it enables all cors requests
 
 /*--------------------------Teacher Section-------------------------------------*/
 
+
+
+
+
 /*--------------------------Section-------------------------------------*/
 
 // get sections id and names and section complete percentage
@@ -103,6 +107,10 @@ app.get('/teacher/sections', (req, res) => {
 
 /*--------------------------Section-------------------------------------*/
 
+
+
+
+
 /*--------------------------Common-------------------------------------*/
 // get courseFolder details
 app.get('/teacher/coursefolders', (req, res) => {
@@ -117,7 +125,40 @@ app.get('/teacher/coursefolders', (req, res) => {
     })
 })
 
+//get whole CFM object
+app.get('/teacher/getCFM',(req,res)=>{
+  CFM.
+  find({'sectioncourse':req.query.section_id}).
+  populate('result').
+  populate('final').
+  populate('mid').
+  populate('attendance').
+  populate('courseOutline').
+  populate([{
+    path: 'assingment',
+    populate: {
+      path: 'Assignments',
+    }
+  }]).
+  populate([{
+    path: 'quiz',
+    populate: {
+      path: 'Quiz',
+    }
+  }]).
+  exec(function(error, sectionarraydata) {
+    if (error) return res.send({
+      message: 'Error fetching Data'
+    });
+    res.send(sectionarraydata)
+  });
+})
+
 /*--------------------------Common-------------------------------------*/
+
+
+
+
 
 /*--------------------------Courses-------------------------------------*/
 // get cources of logged in teacher
@@ -140,8 +181,11 @@ app.get('/teacher/navcourse', (req, res) => {
 /*--------------------------Courses-------------------------------------*/
 
 
+
+
+
 /*--------------------------Uploads-------------------------------------*/
-//assignments
+//Add assignments
 app.post('/teacher/addAssignment', (req, res) => {
   const cfm = CFM.findOne({ '_id': req.body.sectionID }, function (err, person) {
     if (err){
@@ -261,7 +305,25 @@ app.post('/teacher/addAssignment', (req, res) => {
   })
 });
 
-//quizes
+//get Assignments
+app.get('/teacher/getAssignments',(req, res)=>{
+  CFM.
+  find({'sectioncourse':req.query.section_id}).
+  populate([{
+    path: 'assingment',
+    populate: {
+      path: 'Assignments',
+    }
+  }]).
+  exec(function(error, sectionarraydata) {
+    if (error) return res.send({
+      message: 'Error fetching Data'
+    });
+    res.send(sectionarraydata)
+  });
+})
+
+//Add quizes
 app.post('/teacher/addQuizes', (req, res) => {
   const cfm = CFM.findOne({ '_id': req.body.sectionID }, function (err, person) {
     if (err){
@@ -380,6 +442,24 @@ app.post('/teacher/addQuizes', (req, res) => {
     }
   })
 });
+
+//get Quizes
+app.get('/teacher/getQuizes',(req,res)=>{
+  CFM.
+  find({'sectioncourse':req.query.section_id}).
+  populate([{
+    path: 'quiz',
+    populate: {
+      path: 'Quiz',
+    }
+  }]).
+  exec(function(error, sectionarraydata) {
+    if (error) return res.send({
+      message: 'Error fetching Data'
+    });
+    res.send(sectionarraydata)
+  });
+})
 
 //results
 app.post('/teacher/addResults', (req, res) => {
@@ -716,36 +796,11 @@ app.post('/teacher/addCOutline', (req, res) => {
   })
 });
 
-//get whole CFM object
-app.get('/getResults',(req,res)=>{
-  CFM.
-  find({'sectioncourse':"5ef2e9ffd807fd67b219630b"}).
-  populate('result').
-  populate('final').
-  populate('mid').
-  populate('attendance').
-  populate('courseOutline').
-  populate([{
-    path: 'assingment',
-    populate: {
-      path: 'Assignments',
-    }
-  }]).
-  populate([{
-    path: 'quiz',
-    populate: {
-      path: 'Quiz',
-    }
-  }]).
-  exec(function(error, sectionarraydata) {
-    if (error) return res.send({
-      message: 'Error fetching Data'
-    });
-    res.send(sectionarraydata)
-  });
-})
-
 /*--------------------------Uploads-------------------------------------*/
+
+
+
+
 
 /*--------------------------Daily Logs-------------------------------------*/
 
@@ -779,6 +834,482 @@ app.get("/teacher/getLogs", (req, res) => {
 })
 
 /*--------------------------Daily Logs-------------------------------------*/
+
+
+
+
+
+/*--------------------------M e n t o r-------------------------------------*/
+
+//get mentor courses of logged in teacher
+app.get('/teacher/mentor/getCourses',(req, res)=>{
+  User.find({
+      _id: req.query.id
+    })
+    .populate([{
+      path: 'coursementor',
+      populate: {
+        path: 'course',
+      }
+    }])
+    .exec(function(err, users) {
+      if (err) return res.status(400).send(err);
+      res.status(200).send(users)
+    })
+})
+
+//get sections from course id For mentor
+app.get('/teacher/mentor/getSections',(req, res)=>{
+  Sections.find({
+      'course': req.query.course_id
+    })
+    .exec(function(err, users) {
+      if (err) return res.status(400).send(err);
+      res.status(200).send(users)
+    })
+})
+
+//to get courseFolderMaterial of section from sectio ID refer to line# 121
+
+//to get assignment details and quizes details refer to line#294 & 432
+
+//approve Assignment
+app.post('/teacher/mentor/approveAssignment', (req, res) => {
+  const sec = Assignments.findOne({
+    '_id': req.body.assignment_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Assignment not found'
+      });
+    }
+    as.mentorAproval = req.body.approval;
+    as.mentorComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Assignment Approved"
+    });
+  })
+})
+
+//approve Quiz
+app.post('/teacher/mentor/approveQuiz', (req, res) => {
+  const sec = Quiz.findOne({
+    '_id': req.body.quiz_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Quiz not found'
+      });
+    }
+    as.mentorAproval = req.body.approval;
+    as.mentorComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Quiz Approved"
+    });
+  })
+})
+
+//approve result
+app.post('/teacher/mentor/approveResult', (req, res) => {
+  const sec = Result.findOne({
+    '_id': req.body.result_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Result not found'
+      });
+    }
+    as.mentorAproval = req.body.approval;
+    as.mentorComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Result Approved"
+    });
+  })
+})
+
+//approve Finals
+app.post('/teacher/mentor/approveFinal', (req, res) => {
+  const sec = Finals.findOne({
+    '_id': req.body.final_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Final not found'
+      });
+    }
+    as.mentorAproval = req.body.approval;
+    as.mentorComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Final Approved"
+    });
+  })
+})
+
+//approve Mids
+app.post('/teacher/mentor/approveMid', (req, res) => {
+  const sec = Mids.findOne({
+    '_id': req.body.mid_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Mid not found'
+      });
+    }
+    as.mentorAproval = req.body.approval;
+    as.mentorComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Mid Approved"
+    });
+  })
+})
+
+//approve Course Outline
+app.post('/teacher/mentor/approveCOutline', (req, res) => {
+  const sec = CourseOutline.findOne({
+    '_id': req.body.COutline_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Course Outline not found'
+      });
+    }
+    as.mentorAproval = req.body.approval;
+    as.mentorComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Course Outline Approved"
+    });
+  })
+})
+
+//approve Attendance
+app.post('/teacher/mentor/approveAttendance', (req, res) => {
+  const sec = Attendance.findOne({
+    '_id': req.body.attendence_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Attendance not found'
+      });
+    }
+    as.mentorAproval = req.body.approval;
+    as.mentorComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Attendance Approved"
+    });
+  })
+})
+
+/*--------------------------M e n t o r-------------------------------------*/
+
+
+
+
+
+/*--------------------------H     O     D-------------------------------------*/
+//approve Assignment
+app.post('/teacher/hod/approveAssignment', (req, res) => {
+  const sec = Assignments.findOne({
+    '_id': req.body.assignment_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Assignment not found'
+      });
+    }
+    as.hodAproval = req.body.approval;
+    as.hodComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Assignment Approved"
+    });
+  })
+})
+
+//approve Quiz
+app.post('/teacher/hod/approveQuiz', (req, res) => {
+  const sec = Quiz.findOne({
+    '_id': req.body.quiz_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Quiz not found'
+      });
+    }
+    as.hodAproval = req.body.approval;
+    as.hodComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Quiz Approved"
+    });
+  })
+})
+
+//approve result
+app.post('/teacher/hod/approveResult', (req, res) => {
+  const sec = Result.findOne({
+    '_id': req.body.result_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Result not found'
+      });
+    }
+    as.hodAproval = req.body.approval;
+    as.hodComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Result Approved"
+    });
+  })
+})
+
+//approve Finals
+app.post('/teacher/hod/approveFinal', (req, res) => {
+  const sec = Finals.findOne({
+    '_id': req.body.final_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Final not found'
+      });
+    }
+    as.hodAproval = req.body.approval;
+    as.hodComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Final Approved"
+    });
+  })
+})
+
+//approve Mids
+app.post('/teacher/hod/approveMid', (req, res) => {
+  const sec = Mids.findOne({
+    '_id': req.body.mid_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Mid not found'
+      });
+    }
+    as.hodAproval = req.body.approval;
+    as.hodComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Mid Approved"
+    });
+  })
+})
+
+//approve Course Outline
+app.post('/teacher/hod/approveCOutline', (req, res) => {
+  const sec = CourseOutline.findOne({
+    '_id': req.body.COutline_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Course Outline not found'
+      });
+    }
+    as.hodAproval = req.body.approval;
+    as.hodComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Course Outline Approved"
+    });
+  })
+})
+
+//approve Attendance
+app.post('/teacher/hod/approveAttendance', (req, res) => {
+  const sec = Attendance.findOne({
+    '_id': req.body.attendence_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Attendance not found'
+      });
+    }
+    as.hodAproval = req.body.approval;
+    as.hodComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Attendance Approved"
+    });
+  })
+})
+
+/*--------------------------H     O     D-------------------------------------*/
+
+
+
+
+/*--------------------------C o u r s e     F o l d e r      C  o m e t t e-------------------------------------*/
+//approve Assignment
+app.post('/teacher/cfc/approveAssignment', (req, res) => {
+  const sec = Assignments.findOne({
+    '_id': req.body.assignment_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Assignment not found'
+      });
+    }
+    as.cfcAproval = req.body.approval;
+    as.cfcComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Assignment Approved"
+    });
+  })
+})
+
+//approve Quiz
+app.post('/teacher/cfc/approveQuiz', (req, res) => {
+  const sec = Quiz.findOne({
+    '_id': req.body.quiz_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Quiz not found'
+      });
+    }
+    as.cfcAproval = req.body.approval;
+    as.cfcComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Quiz Approved"
+    });
+  })
+})
+
+//approve result
+app.post('/teacher/cfc/approveResult', (req, res) => {
+  const sec = Result.findOne({
+    '_id': req.body.result_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Result not found'
+      });
+    }
+    as.cfcAproval = req.body.approval;
+    as.cfcComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Result Approved"
+    });
+  })
+})
+
+//approve Finals
+app.post('/teacher/cfc/approveFinal', (req, res) => {
+  const sec = Finals.findOne({
+    '_id': req.body.final_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Final not found'
+      });
+    }
+    as.cfcAproval = req.body.approval;
+    as.cfcComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Final Approved"
+    });
+  })
+})
+
+//approve Mids
+app.post('/teacher/cfc/approveMid', (req, res) => {
+  const sec = Mids.findOne({
+    '_id': req.body.mid_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Mid not found'
+      });
+    }
+    as.cfcAproval = req.body.approval;
+    as.cfcComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Mid Approved"
+    });
+  })
+})
+
+//approve Course Outline
+app.post('/teacher/cfc/approveCOutline', (req, res) => {
+  const sec = CourseOutline.findOne({
+    '_id': req.body.COutline_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Course Outline not found'
+      });
+    }
+    as.cfcAproval = req.body.approval;
+    as.cfcComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Course Outline Approved"
+    });
+  })
+})
+
+//approve Attendance
+app.post('/teacher/cfc/approveAttendance', (req, res) => {
+  const sec = Attendance.findOne({
+    '_id': req.body.attendence_id
+  }, (err, as) => {
+    if (!sec) {
+      return res.json({
+        message: 'Attendance not found'
+      });
+    }
+    as.cfcAproval = req.body.approval;
+    as.cfcComment = req.body.comment;
+    as.save()
+    return res.send({
+      success: true,
+      message: "Attendance Approved"
+    });
+  })
+})
+
+/*--------------------------C o u r s e     F o l d e r      C  o m e t t e-------------------------------------*/
+
+
+
 
 
 /*--------------------------Teacher Section-------------------------------------*/
