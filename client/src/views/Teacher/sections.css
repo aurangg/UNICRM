@@ -1,0 +1,13 @@
+.button_styles{
+    transition: 0.3s;
+    box-shadow: none;
+    cursor:pointer;
+}
+.button_styles:hover{
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0,.14), 0 7px 10px -5px rgba(156, 39, 176,.4);
+}
+.button_styles h3{
+    color:white;
+    text-align:center;
+    margin:30px;
+}
